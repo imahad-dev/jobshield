@@ -77,7 +77,15 @@ export default function Home() {
         });
 
         if (fnError) {
-          throw new Error(fnError.message || "Analysis failed. Please try again.");
+          let detail = fnError.message;
+          try {
+            const body = await fnError.context?.json();
+            if (body?.error) detail = body.error;
+          } catch {
+            // response body wasn't JSON — fall back to fnError.message
+          }
+          console.error("Edge Function error detail:", detail, fnError);
+          throw new Error(detail || "Analysis failed. Please try again.");
         }
 
         const result = data as AnalysisResult;
