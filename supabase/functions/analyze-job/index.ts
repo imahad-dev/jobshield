@@ -123,8 +123,11 @@ Scoring guidelines:
     if (!openrouterResponse.ok) {
       const errorText = await openrouterResponse.text();
       console.error("OpenRouter error:", openrouterResponse.status, errorText);
+      // TEMP DEBUG: surfacing real OpenRouter error to client — revert before final submission
       return new Response(
-        JSON.stringify({ error: "AI analysis service unavailable. Please try again." }),
+        JSON.stringify({
+          error: `AI service error (${openrouterResponse.status}): ${errorText.slice(0, 300)}`,
+        }),
         { status: 502, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
       );
     }
