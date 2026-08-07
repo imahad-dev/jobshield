@@ -1,0 +1,94 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-heading: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --color-primary: oklch(0.5 0.1193 242.75);
+  --color-on-primary: oklch(1.0 0 0);
+  --color-secondary: oklch(0.6847 0.1479 237.32);
+  --color-accent: oklch(0.6271 0.1699 149.21);
+  --color-background: oklch(0.9771 0.0125 236.62);
+  --color-foreground: oklch(0.3912 0.0845 240.88);
+  --color-muted: oklch(0.9478 0.0118 239.91);
+  --color-border: oklch(0.9014 0.0555 230.9);
+  --color-destructive: oklch(0.5771 0.2152 27.33);
+  --color-ring: oklch(0.5 0.1193 242.75);
+  --color-safe: oklch(0.6271 0.1699 149.21);
+  --color-cautious: oklch(0.722 0.143 78.96);
+  --color-high-risk: oklch(0.5771 0.2152 27.33);
+  --color-safe-bg: oklch(0.95 0.025 149.21);
+  --color-cautious-bg: oklch(0.95 0.025 78.96);
+  --color-high-risk-bg: oklch(0.95 0.025 27.33);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 bg-accent text-white hover:brightness-110 shadow-sm;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 border border-border bg-transparent text-foreground hover:bg-muted;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 text-foreground hover:bg-muted;
+  }
+
+  .card {
+    @apply rounded-xl bg-white shadow-md;
+  }
+
+  .input-field {
+    @apply w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 transition-colors duration-150 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20;
+  }
+}
+
+/* Risk level animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+.animate-fade-in-up-delay-1 {
+  animation-delay: 0.1s;
+}
+.animate-fade-in-up-delay-2 {
+  animation-delay: 0.2s;
+}
+.animate-fade-in-up-delay-3 {
+  animation-delay: 0.3s;
+}
+.animate-fade-in-up-delay-4 {
+  animation-delay: 0.4s;
+}
