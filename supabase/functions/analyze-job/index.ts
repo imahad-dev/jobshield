@@ -21,51 +21,100 @@ interface AnalysisResult {
   advice: string;
 }
 
+// Models are tried in order — free tier first, paid fallbacks after.
+// OpenRouter deprecates / rate-limits models frequently, so we fail over.
+const MODELS = [
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "openai/gpt-4o-mini",
+  "google/gemini-2.0-flash-001",
+  "anthropic/claude-3.5-haiku",
+];
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function jsonResponse(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+}
+
+async function callOpenRouter(
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<
+  { ok: true; data: any } | { ok: false; status: number; message: string }
+> {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://jobshield.app",
+      "X-OpenRouter-Title": "JobShield",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.2,
+      max_tokens: 2048,
+    }),
+  });
+
+  const raw = await res.text();
+  let data: any = null;
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    // non-JSON error body
+  }
+
+  if (!res.ok) {
+    return {
+      ok: false,
+      status: res.status,
+      message: data?.error?.message || data?.message || raw.slice(0, 300),
+    };
+  }
+
+  return { ok: true, data };
+}
+
 Deno.serve(async (req: Request) => {
-  // Handle CORS preflight
+  // CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-      },
-    });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      });
+      return jsonResponse({ error: "Missing Authorization header" }, 401);
     }
 
     const body: CheckRequest = await req.json();
     const { job_text, company_name, domain, domain_age_days } = body;
 
     if (!job_text || job_text.trim().length < 10) {
-      return new Response(
-        JSON.stringify({ error: "Job text must be at least 10 characters" }),
-        { status: 400, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
-      );
+      return jsonResponse({ error: "Job text must be at least 10 characters" }, 400);
     }
 
     const apiKey = Deno.env.get("OPENROUTER_API_KEY");
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: "Server configuration error" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-      });
+      return jsonResponse({ error: "Server configuration error: missing OPENROUTER_API_KEY" }, 500);
     }
 
     const systemPrompt = `You are a job scam detection expert. Analyze job postings and recruiter messages for scam indicators.
@@ -98,96 +147,62 @@ Scoring guidelines:
 
     const userPrompt = `Analyze this job posting for scam indicators:${companyInfo}${domainInfo}\n\n---\n${job_text}\n---\n\nRespond with ONLY the JSON object.`;
 
-    const openrouterResponse = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://jobshield.app",
-          "X-OpenRouter-Title": "JobShield",
-        },
-        body: JSON.stringify({
-          model: "meta-llama/llama-3.3-70b-instruct:free",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0.2,
-          max_tokens: 1024,
-        }),
+    // Try models in order until one succeeds
+    const failures: string[] = [];
+
+    for (const model of MODELS) {
+      console.log(`Trying model: ${model}`);
+      const result = await callOpenRouter(apiKey, model, systemPrompt, userPrompt);
+
+      if (!result.ok) {
+        failures.push(`${model}: HTTP ${result.status} — ${result.message}`);
+        console.error("OpenRouter error", result.status, result.message, "model:", model);
+        continue;
       }
+
+      const content = result.data?.choices?.[0]?.message?.content;
+      if (!content) {
+        failures.push(`${model}: empty response`);
+        continue;
+      }
+
+      // Parse the JSON from the response (may be wrapped in markdown code blocks)
+      try {
+        const jsonStr = content.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+        const analysis = JSON.parse(jsonStr) as AnalysisResult;
+
+        if (
+          typeof analysis.risk_score !== "number" ||
+          !["safe", "cautious", "high_risk"].includes(analysis.risk_level)
+        ) {
+          throw new Error("invalid risk fields");
+        }
+
+        // Ensure risk_score consistency with risk_level
+        const computedLevel =
+          analysis.risk_score >= 70
+            ? "safe"
+            : analysis.risk_score >= 40
+              ? "cautious"
+              : "high_risk";
+        analysis.risk_level = computedLevel;
+        analysis.red_flags = Array.isArray(analysis.red_flags) ? analysis.red_flags : [];
+
+        return jsonResponse(analysis, 200);
+      } catch {
+        failures.push(`${model}: unparseable response`);
+        console.error("Failed to parse AI response model:", model, content);
+      }
+    }
+
+    // All models failed — surface the first failure so we can diagnose
+    const firstFailure = failures[0] || "All models unavailable";
+    return jsonResponse(
+      { error: `AI analysis service unavailable (${firstFailure}). Please try again.` },
+      502,
     );
-
-    if (!openrouterResponse.ok) {
-      const errorText = await openrouterResponse.text();
-      console.error("OpenRouter error:", openrouterResponse.status, errorText);
-      // TEMP DEBUG: surfacing real OpenRouter error to client — revert before final submission
-      return new Response(
-        JSON.stringify({
-          error: `AI service error (${openrouterResponse.status}): ${errorText.slice(0, 300)}`,
-        }),
-        { status: 502, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
-      );
-    }
-
-    const openrouterData = await openrouterResponse.json();
-    const content = openrouterData.choices?.[0]?.message?.content;
-
-    if (!content) {
-      return new Response(
-        JSON.stringify({ error: "No analysis returned. Please try again." }),
-        { status: 502, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
-      );
-    }
-
-    // Parse the JSON from the response (it may be wrapped in markdown code blocks)
-    let analysis: AnalysisResult;
-    try {
-      const jsonStr = content.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-      analysis = JSON.parse(jsonStr);
-    } catch {
-      console.error("Failed to parse AI response:", content);
-      return new Response(
-        JSON.stringify({ error: "Failed to parse analysis. Please try again." }),
-        { status: 502, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
-      );
-    }
-
-    // Validate the analysis
-    if (
-      typeof analysis.risk_score !== "number" ||
-      !["safe", "cautious", "high_risk"].includes(analysis.risk_level)
-    ) {
-      return new Response(
-        JSON.stringify({ error: "Invalid analysis format. Please try again." }),
-        { status: 502, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
-      );
-    }
-
-    // Ensure risk_score consistency with risk_level
-    const computedLevel =
-      analysis.risk_score >= 70
-        ? "safe"
-        : analysis.risk_score >= 40
-          ? "cautious"
-          : "high_risk";
-    analysis.risk_level = computedLevel;
-
-    return new Response(JSON.stringify(analysis), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      },
-    });
   } catch (error) {
     console.error("Unexpected error:", error);
-    return new Response(
-      JSON.stringify({ error: "An unexpected error occurred. Please try again." }),
-      { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
-    );
+    return jsonResponse({ error: "An unexpected error occurred. Please try again." }, 500);
   }
 });
