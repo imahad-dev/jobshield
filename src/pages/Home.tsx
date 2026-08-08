@@ -162,7 +162,10 @@ export default function Home() {
       {/* Hero */}
       <div className="mb-12 text-center animate-fade-in-up">
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 shadow-sm">
-          <Shield className="h-8 w-8 text-primary" />
+          <svg viewBox="0 0 32 32" fill="none" className="h-8 w-8 text-primary" aria-hidden="true">
+            <path d="M16 3L5 9.5v7c0 6.7 4.4 12.8 11 14.5 6.6-1.7 11-7.8 11-14.5v-7L16 3z" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
+            <path d="M11 16l4 4 7-7" stroke="var(--color-accent, #16a34a)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
         <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Is that job offer legit?

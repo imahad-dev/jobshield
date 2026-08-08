@@ -38,6 +38,7 @@ export default function Results() {
   const [result, setResult] = useState<AnalysisResult | null>(location.state as AnalysisResult | null);
   const [loading, setLoading] = useState(!result);
   const [error, setError] = useState("");
+  const [animatedScore, setAnimatedScore] = useState(0);
 
   useEffect(() => {
     const checkId = searchParams.get("id");
@@ -78,6 +79,35 @@ export default function Results() {
         setLoading(false);
       });
   }, [searchParams, result]);
+
+  // Animate score on mount / when result changes
+  useEffect(() => {
+    if (!result) return;
+
+    const target = result.risk_score;
+    setAnimatedScore(0);
+
+    // Wait a frame for the 0 to render, then animate
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const duration = 700;
+        const start = performance.now();
+
+        function tick(now: number) {
+          const elapsed = now - start;
+          const progress = Math.min(elapsed / duration, 1);
+          // ease-out quadratic
+          const eased = 1 - Math.pow(1 - progress, 2);
+          setAnimatedScore(Math.round(eased * target));
+          if (progress < 1) {
+            requestAnimationFrame(tick);
+          }
+        }
+
+        requestAnimationFrame(tick);
+      });
+    });
+  }, [result?.risk_score]);
 
   if (loading) {
     return (
@@ -221,19 +251,19 @@ export default function Results() {
             Trust Score
           </div>
           <div className={`text-4xl font-bold ${getScoreColor(risk_score)}`}>
-            {risk_score}
+            {animatedScore}
             <span className="text-lg font-normal text-foreground/30">/100</span>
           </div>
           <div className={`mt-2 h-2 w-full rounded-full bg-muted overflow-hidden`}>
             <div
-              className={`h-full rounded-full transition-all duration-700 ${
+              className={`h-full rounded-full transition-all duration-700 ease-out ${
                 risk_score >= 70
                   ? "bg-safe"
                   : risk_score >= 40
                     ? "bg-cautious"
                     : "bg-high-risk"
               }`}
-              style={{ width: `${risk_score}%` }}
+              style={{ width: `${animatedScore}%` }}
             />
           </div>
         </div>

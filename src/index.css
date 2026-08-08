@@ -45,6 +45,17 @@
       radial-gradient(ellipse 40% 40% at 50% 50%, color-mix(in oklch, var(--color-primary) 3%, transparent) 0%, transparent 60%);
   }
 
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-image: radial-gradient(circle, color-mix(in oklch, var(--color-primary) 3%, transparent) 1px, transparent 1px);
+    background-size: 36px 36px;
+    opacity: 0.4;
+  }
+
   *:focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;
   }
@@ -103,4 +114,13 @@
 }
 .animate-fade-in-up-delay-4 {
   animation-delay: 0.4s;
+}
+
+/* Score gauge fill animation */
+@keyframes scoreFill {
+  from { width: 0%; }
+}
+
+.animate-score-fill {
+  animation: scoreFill 700ms ease-out both;
 }

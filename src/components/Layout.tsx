@@ -23,8 +23,11 @@ export default function Layout() {
       <header className="sticky top-0 z-50 border-b border-border bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-on-primary text-sm font-bold">
-              JS
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary">
+              <svg viewBox="0 0 32 32" fill="none" className="h-5 w-5" aria-hidden="true">
+                <path d="M16 3L5 9.5v7c0 6.7 4.4 12.8 11 14.5 6.6-1.7 11-7.8 11-14.5v-7L16 3z" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                <path d="M11 16l4 4 7-7" stroke="var(--color-accent, #16a34a)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
             <span className="text-lg font-semibold text-foreground">JobShield</span>
           </Link>
