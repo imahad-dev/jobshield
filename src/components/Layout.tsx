@@ -84,7 +84,7 @@ export default function Layout() {
       </main>
 
       <footer className="border-t border-border py-6 text-center text-xs text-foreground/40">
-        <p>JobShield — Protect yourself from job scams. Always verify before applying.</p>
+        <p>JobShield — The only scam checker that works across job boards, recruiter messages, freelance gigs, and direct offers — in any language, from any region. Always verify before you apply.</p>
       </footer>
     </div>
   );

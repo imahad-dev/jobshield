@@ -188,6 +188,16 @@ Scoring guidelines:
         analysis.risk_level = computedLevel;
         analysis.red_flags = Array.isArray(analysis.red_flags) ? analysis.red_flags : [];
 
+        // Scoring consistency: cap risk_score so AI's number never contradicts its own red flags
+        const highSeverityCount = analysis.red_flags.filter(
+          (f) => f.severity === "high"
+        ).length;
+        if (highSeverityCount >= 2 && analysis.risk_score > 35) {
+          analysis.risk_score = 35;
+        } else if (highSeverityCount === 1 && analysis.risk_score > 55) {
+          analysis.risk_score = 55;
+        }
+
         return jsonResponse(analysis, 200);
       } catch {
         failures.push(`${model}: unparseable response`);

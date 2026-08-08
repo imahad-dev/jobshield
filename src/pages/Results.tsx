@@ -122,6 +122,19 @@ export default function Results() {
     }
   };
 
+  const getSeverityPill = (severity: string) => {
+    switch (severity) {
+      case "high":
+        return "bg-high-risk/15 text-high-risk border border-high-risk/20";
+      case "medium":
+        return "bg-cautious/15 text-cautious border border-cautious/20";
+      case "low":
+        return "bg-amber-100 text-amber-700 border border-amber-200";
+      default:
+        return "bg-muted text-foreground/60 border border-border";
+    }
+  };
+
   const getLevelIcon = () => {
     switch (risk_level) {
       case "safe":
@@ -242,7 +255,7 @@ export default function Results() {
                     </div>
                     <p className="mt-1 text-sm opacity-80">{flag.description}</p>
                   </div>
-                  <span className="shrink-0 rounded-md bg-white/50 px-2 py-0.5 text-xs font-medium capitalize">
+                  <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-medium capitalize ${getSeverityPill(flag.severity)}`}>
                     {flag.severity}
                   </span>
                 </div>

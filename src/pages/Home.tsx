@@ -1,7 +1,37 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Search, Building2, Globe, Loader2, AlertTriangle, CheckCircle, Info, ShieldCheck, BarChart3 } from "lucide-react";
+import { Shield, Search, Building2, Globe, Loader2, AlertTriangle, CheckCircle, Info, ShieldCheck, ClipboardList } from "lucide-react";
 import { supabase } from "../lib/supabase";
+
+const scamExample = `URGENT: Executive Assistant needed ASAP!
+
+We are looking for a reliable candidate to fill the position of Executive Assistant at a leading international firm. Work from home, flexible hours.
+
+Salary: $5,000 - $8,000 per week!
+
+Requirements:
+- Must be 18+ years old
+- Basic computer literacy
+- No experience necessary - we provide training!
+
+To apply, email your details to hr.recruitment247@gmail.com. Due to high volume, only shortlisted candidates will be contacted. Please include your full name, address, phone number, and bank details for our "secure payment verification" process.
+
+Start immediately! Don't miss this life-changing opportunity!`;
+
+const legitExample = `Software Engineer - Frontend
+
+Acme Technologies is looking for a mid-level Frontend Engineer to join our product team in San Francisco (hybrid, 3 days in office).
+
+Requirements:
+- 3+ years experience with React and TypeScript
+- Experience with Tailwind CSS and modern frontend tooling
+- Strong understanding of web accessibility and performance
+
+We offer competitive salary ($120K-$150K DOE), equity, full benefits, 401k matching, and professional development budget.
+
+To apply, visit careers.acmetech.com and submit your resume. Our process includes a phone screen, technical interview, and a take-home project. We typically respond within 5 business days.
+
+Acme Technologies is an equal opportunity employer.`;
 
 interface AnalysisResult {
   risk_score: number;
@@ -141,28 +171,28 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Stats bar — icon chips */}
+      {/* Trust badges — honest, non-numeric */}
       <div className="mb-8 grid grid-cols-3 gap-4 animate-fade-in-up animate-fade-in-up-delay-1">
         <div className="card p-4 text-center">
           <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
             <ShieldCheck className="h-4 w-4 text-primary" />
           </div>
-          <div className="text-lg font-bold text-foreground">100+</div>
-          <div className="text-xs text-foreground/50 mt-0.5">Checks Run</div>
-        </div>
-        <div className="card p-4 text-center">
-          <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-high-risk-bg">
-            <AlertTriangle className="h-4 w-4 text-high-risk" />
-          </div>
-          <div className="text-lg font-bold text-high-risk">42%</div>
-          <div className="text-xs text-foreground/50 mt-0.5">Flagged High-Risk</div>
+          <div className="text-sm font-semibold text-foreground">AI-Powered Analysis</div>
+          <div className="text-xs text-foreground/50 mt-0.5">Detects scam patterns instantly</div>
         </div>
         <div className="card p-4 text-center">
           <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-safe-bg">
-            <BarChart3 className="h-4 w-4 text-safe" />
+            <CheckCircle className="h-4 w-4 text-safe" />
           </div>
-          <div className="text-lg font-bold text-safe">Safe</div>
-          <div className="text-xs text-foreground/50 mt-0.5">Average Score</div>
+          <div className="text-sm font-semibold text-foreground">Free &amp; Private</div>
+          <div className="text-xs text-foreground/50 mt-0.5">No cost, your data stays yours</div>
+        </div>
+        <div className="card p-4 text-center">
+          <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10">
+            <Globe className="h-4 w-4 text-secondary" />
+          </div>
+          <div className="text-sm font-semibold text-foreground">Works Globally</div>
+          <div className="text-xs text-foreground/50 mt-0.5">Any language, any region</div>
         </div>
       </div>
 
@@ -185,6 +215,27 @@ export default function Home() {
             className="input-field resize-y min-h-[140px]"
             disabled={loading}
           />
+          {/* Example chips */}
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setJobText(scamExample)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-high-risk/20 bg-high-risk-bg/50 px-3 py-1 text-xs font-medium text-high-risk transition-all duration-150 hover:bg-high-risk-bg active:scale-[0.97]"
+              disabled={loading}
+            >
+              <AlertTriangle className="h-3 w-3" />
+              Try a scam example
+            </button>
+            <button
+              type="button"
+              onClick={() => setJobText(legitExample)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-safe/20 bg-safe-bg/50 px-3 py-1 text-xs font-medium text-safe transition-all duration-150 hover:bg-safe-bg active:scale-[0.97]"
+              disabled={loading}
+            >
+              <CheckCircle className="h-3 w-3" />
+              Try a legit example
+            </button>
+          </div>
         </div>
 
         <div className="mb-4 grid gap-4 sm:grid-cols-2">
@@ -248,8 +299,45 @@ export default function Home() {
         </button>
       </form>
 
+      {/* How It Works */}
+      <div className="mt-8 animate-fade-in-up animate-fade-in-up-delay-3">
+        <h2 className="mb-5 text-center text-lg font-semibold text-foreground">How It Works</h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="card flex flex-col items-center p-5 text-center">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <ClipboardList className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-on-primary">1</span>
+              <span className="text-sm font-medium text-foreground">Paste the offer</span>
+            </div>
+            <p className="mt-1.5 text-xs text-foreground/50">Paste any job posting, email, or recruiter message</p>
+          </div>
+          <div className="card flex flex-col items-center p-5 text-center">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10">
+              <Shield className="h-5 w-5 text-accent" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-white">2</span>
+              <span className="text-sm font-medium text-foreground">AI analyzes it</span>
+            </div>
+            <p className="mt-1.5 text-xs text-foreground/50">Our AI checks for scam indicators in seconds</p>
+          </div>
+          <div className="card flex flex-col items-center p-5 text-center">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-safe-bg">
+              <CheckCircle className="h-5 w-5 text-safe" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-safe text-[11px] font-bold text-white">3</span>
+              <span className="text-sm font-medium text-foreground">Get a clear verdict</span>
+            </div>
+            <p className="mt-1.5 text-xs text-foreground/50">See your risk score, red flags, and what to do next</p>
+          </div>
+        </div>
+      </div>
+
       {/* Trust indicators */}
-      <div className="mt-8 grid gap-3 sm:grid-cols-3 animate-fade-in-up animate-fade-in-up-delay-3">
+      <div className="mt-8 grid gap-3 sm:grid-cols-3 animate-fade-in-up animate-fade-in-up-delay-4">
         <div className="card flex items-start gap-3 p-4">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
             <CheckCircle className="h-4 w-4 text-primary" />
