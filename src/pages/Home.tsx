@@ -37,7 +37,9 @@ interface AnalysisResult {
   risk_score: number;
   risk_level: "safe" | "cautious" | "high_risk";
   red_flags: { type: string; description: string; severity: string }[];
-  verdict: string;
+  banner_headline: string;
+  banner_description: string;
+  ai_analysis: string;
   advice: string;
 }
 
@@ -132,7 +134,7 @@ export default function Home() {
             risk_score: result.risk_score,
             risk_level: result.risk_level,
             red_flags: result.red_flags as any,
-            verdict: result.verdict,
+            verdict: result.ai_analysis,
             advice: result.advice,
           })
           .select("id")

@@ -17,7 +17,9 @@ interface AnalysisResult {
   risk_score: number;
   risk_level: "safe" | "cautious" | "high_risk";
   red_flags: RedFlag[];
-  verdict: string;
+  banner_headline: string;
+  banner_description: string;
+  ai_analysis: string;
   advice: string;
 }
 
@@ -178,27 +180,55 @@ Scoring guidelines:
           throw new Error("invalid risk fields");
         }
 
-        // Ensure risk_score consistency with risk_level
+        const redFlags = Array.isArray(analysis.red_flags) ? analysis.red_flags : [];
+
+        // ── Deterministic risk_score from red_flag severities ──────────────
+        // Ignore the AI's opinionated risk_score entirely — LLMs are unreliable
+        // at numeric scoring. Compute from the flags the AI did identify.
+        let computedScore = 100;
+        for (const flag of redFlags) {
+          switch (flag.severity) {
+            case "high":   computedScore -= 40; break;
+            case "medium": computedScore -= 20; break;
+            case "low":    computedScore -= 10; break;
+          }
+        }
+        computedScore = Math.max(0, Math.min(100, computedScore));
+
+        // Derive risk_level from computed score
         const computedLevel =
-          analysis.risk_score >= 70
+          computedScore >= 70
             ? "safe"
-            : analysis.risk_score >= 40
+            : computedScore >= 40
               ? "cautious"
               : "high_risk";
-        analysis.risk_level = computedLevel;
-        analysis.red_flags = Array.isArray(analysis.red_flags) ? analysis.red_flags : [];
 
-        // Scoring consistency: cap risk_score so AI's number never contradicts its own red flags
-        const highSeverityCount = analysis.red_flags.filter(
-          (f) => f.severity === "high"
-        ).length;
-        if (highSeverityCount >= 2 && analysis.risk_score > 35) {
-          analysis.risk_score = 35;
-        } else if (highSeverityCount === 1 && analysis.risk_score > 55) {
-          analysis.risk_score = 55;
-        }
+        // ── Fixed banner text by risk_level (never sourced from AI) ────────
+        const bannerByLevel: Record<string, { headline: string; description: string }> = {
+          safe: {
+            headline: "Looks Safe",
+            description: "No major red flags found — this posting appears legitimate.",
+          },
+          cautious: {
+            headline: "Use Caution",
+            description: "Some concerns found — verify details before proceeding.",
+          },
+          high_risk: {
+            headline: "High Risk",
+            description: "Multiple red flags found — this posting shows signs of being a scam.",
+          },
+        };
+        const banner = bannerByLevel[computedLevel];
 
-        return jsonResponse(analysis, 200);
+        return jsonResponse({
+          risk_score: computedScore,
+          risk_level: computedLevel,
+          red_flags: redFlags,
+          banner_headline: banner.headline,
+          banner_description: banner.description,
+          ai_analysis: analysis.verdict || "",
+          advice: analysis.advice || "",
+        }, 200);
       } catch {
         failures.push(`${model}: unparseable response`);
         console.error("Failed to parse AI response model:", model, content);

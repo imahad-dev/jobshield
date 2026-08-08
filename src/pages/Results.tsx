@@ -22,7 +22,10 @@ interface AnalysisResult {
   risk_score: number;
   risk_level: "safe" | "cautious" | "high_risk";
   red_flags: RedFlag[];
-  verdict: string;
+  banner_headline?: string;
+  banner_description?: string;
+  ai_analysis?: string;
+  verdict?: string;
   advice: string;
   domain?: string;
   domain_age_days?: number | null;
@@ -101,7 +104,15 @@ export default function Results() {
     );
   }
 
-  const { risk_score, risk_level, red_flags, verdict, advice } = result;
+  const {
+    risk_score,
+    risk_level,
+    red_flags,
+    banner_headline,
+    banner_description,
+    ai_analysis,
+    advice,
+  } = result;
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return "text-safe";
@@ -168,6 +179,11 @@ export default function Results() {
     }
   };
 
+  // Fallback banner text when loading from DB (old records lack new fields)
+  const headline = banner_headline || getLevelLabel();
+  const description = banner_description || result.verdict || "";
+  const aiText = ai_analysis || result.verdict || "";
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:py-16">
       {/* Back link */}
@@ -179,16 +195,24 @@ export default function Results() {
         Check another job
       </Link>
 
-      {/* Verdict banner */}
+      {/* Verdict banner — text sourced from computed risk_level, not AI */}
       <div className={`rounded-2xl border p-6 mb-6 ${getLevelBg()} animate-fade-in-up`}>
         <div className="flex items-start gap-4">
           <div className="shrink-0">{getLevelIcon()}</div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold text-foreground">{getLevelLabel()}</h2>
-            <p className="mt-1 text-sm text-foreground/70">{verdict}</p>
+            <h2 className="text-lg font-semibold text-foreground">{headline}</h2>
+            <p className="mt-1 text-sm text-foreground/70">{description}</p>
           </div>
         </div>
       </div>
+
+      {/* AI Analysis — raw model verdict shown separately */}
+      {aiText && (
+        <div className="mb-6 card p-5 animate-fade-in-up animate-fade-in-up-delay-1">
+          <h3 className="mb-2 text-sm font-semibold text-foreground">AI Analysis</h3>
+          <p className="text-sm text-foreground/60 leading-relaxed">{aiText}</p>
+        </div>
+      )}
 
       {/* Score card */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 animate-fade-in-up animate-fade-in-up-delay-1">
